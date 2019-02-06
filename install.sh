@@ -16,11 +16,10 @@ function titleLog { echo -e "${BC}$1${NC}"; }
 function sectionLog { echo -e "${UC}$1${NC}"; } 
 function log { echo -e "$1"; }
 
-VERSION=edge
 BRANCH=$VERSION
 
 if [ "$VERSION" = 'edge' ]; then
-    BRANCH=inialize
+    BRANCH=master
 fi
 
 # INFO
@@ -28,6 +27,16 @@ figlet swarmpit
 titleLog "Welcome to Swarmpit"
 log "Version: $VERSION"
 log "Branch: $BRANCH"
+
+# DEPENDENCIES
+sectionLog "\nPreparing dependencies"
+docker pull byrnedo/alpine-curl:latest
+if [ $? -eq 0 ]; then
+    successLog "DONE."
+else
+    errorLog "PREPARATION FAILED!"
+    exit 1
+fi
 
 # INSTALLATION
 sectionLog "\nPreparing installation"
@@ -114,13 +123,13 @@ SWARMPIT_INITIALIZE_URL="http://${STACK}_app:8080/initialize"
 STATUS=$(docker run --rm --network $SWARMPIT_NETWORK byrnedo/alpine-curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' $SWARMPIT_INITIALIZE_URL -d '{"username": "'"$ADMIN_USER"'", "password": "'"$ADMIN_PASS"'"}')
 if [ $STATUS -eq 201 ]; then
   successLog "DONE."
+  sectionLog "\nSummary"
+  log "Username: $ADMIN_USER"
+  log "Password: $ADMIN_PASS"
 else
-  warningLog "SKIPPED. Initialization was done in previous installation."
+  warningLog "SKIPPED.\nInitialization was already done in previous installation.\nPlease use your old admin credentials to login or drop swarmpit database volume for clean installation."
+  sectionLog "\nSummary"
 fi
 
-# SUMMARY
-sectionLog "\nSummary"
-echo "Username: $ADMIN_USER"
-echo "Password: $ADMIN_PASS"
-
+log "Swarmpit is running on port :$APP_PORT"
 titleLog "\nEnjoy :)"
