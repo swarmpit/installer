@@ -1,7 +1,7 @@
 FROM docker:stable-dind
 MAINTAINER Pavol Noha <pavol.noha@gmail.com>
 
-RUN apk add --update curl git jq figlet && \
+RUN apk add --update git figlet && \
     rm -rf /var/cache/apk/*
 
 WORKDIR /
