@@ -51,43 +51,91 @@ fi
 # SETUP
 sectionLog "\nApplication setup"
 
-## Enter stack name
-while true
-do
-  inputLog "Enter stack name [swarmpit]: "
-  read stack_name
-  STACK=${stack_name:-swarmpit}
-  docker stack ps $STACK &> /dev/null
-  if [ $? -eq 0 ]; then
-    warningLog "Stack name [$STACK] is already taken!"
-  else
-    break
-  fi
-done
+INTERACTIVE=${INTERACTIVE:-1}
+DEFAULT_STACK_NAME=${STACK_NAME:-swarmpit}
+DEFAULT_ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+DEFAULT_APP_PORT=${APP_PORT:-888}
+DEFAULT_DB_VOLUME_DRIVER=${DB_VOLUME_DRIVER:-local}
 
-## Enter application port
-inputLog "Enter application port [888]: "
-read app_port
-APP_PORT=${app_port:-888}
-sed -i 's/888/'"$APP_PORT"'/' swarmpit/docker-compose.yml
+interactiveSetup() {
+  ## Enter stack name
+  while true
+  do
+    inputLog "Enter stack name [$DEFAULT_STACK_NAME]: "
+    read stack_name
+    STACK=${stack_name:=$DEFAULT_STACK_NAME}
+    docker stack ps $STACK &> /dev/null
+    if [ $? -eq 0 ]; then
+      warningLog "Stack name [$STACK] is already taken!"
+    else
+      break
+    fi
+  done
 
-## Enter database volume type
-inputLog "Enter database volume type [local]: "
-read db_volume
-DB_VOLUME=${db_volume:-local}
-sed -i 's/driver: local/'"driver: $DB_VOLUME"'/' swarmpit/docker-compose.yml
+  ## Enter application port
+  inputLog "Enter application port [$DEFAULT_APP_PORT]: "
+  read app_port
+  PORT=${app_port:=$DEFAULT_APP_PORT}
 
-## Enter admin user
-inputLog "Enter admin username [admin]: "
-read admin_username
-ADMIN_USER=${admin_username:-admin}
+  ## Enter database volume driver type
+  inputLog "Enter database volume driver [$DEFAULT_DB_VOLUME_DRIVER]: "
+  read db_driver
+  VOLUME_DRIVER=${db_driver:=$DEFAULT_DB_VOLUME_DRIVER}
 
-## Enter admin passwd
-while [[ ${#admin_password} -lt 8 ]]; do
+  ## Enter admin user
+  inputLog "Enter admin username [$DEFAULT_ADMIN_USERNAME]: "
+  read admin_username
+  ADMIN_USER=${admin_username:=$DEFAULT_ADMIN_USERNAME}
+
+  ## Enter admin passwd
+  while [[ ${#admin_password} -lt 8 ]]; do
     inputLog "Enter admin password (min 8 characters long): "
     read admin_password
-done
-ADMIN_PASS=${admin_password}
+  done
+  ADMIN_PASS=${admin_password}
+}
+
+nonInteractiveSetup() {
+  ## Stack name
+  inputLog "Stack name: $DEFAULT_STACK_NAME"
+  STACK=$DEFAULT_STACK_NAME
+  docker stack ps $STACK &> /dev/null
+  if [ $? -eq 0 ]; then
+    warningLog "\nStack name [$STACK] is already taken!"
+    errorLog "SETUP FAILED!"
+    exit 1
+  fi
+
+  ## Application port
+  inputLog "\nApplication port: $DEFAULT_APP_PORT "
+  PORT=$DEFAULT_APP_PORT
+
+  ## Database volume driver type
+  inputLog "\nDatabase volume driver: $DEFAULT_DB_VOLUME_DRIVER"
+  VOLUME_DRIVER=$DEFAULT_DB_VOLUME_DRIVER
+
+  ## Admin user
+  inputLog "\nAdmin username: $DEFAULT_ADMIN_USERNAME"
+  ADMIN_USER=$DEFAULT_ADMIN_USERNAME
+  
+  ## Admin password
+  inputLog "\nAdmin password: $ADMIN_PASSWORD\n"
+  ADMIN_PASS=$ADMIN_PASSWORD
+  if [ ${#ADMIN_PASS} -lt 8 ]; then
+    warningLog "Admin password is less than 8 character long"
+    errorLog "SETUP FAILED!"
+    exit 1
+  fi
+}
+
+if [ $INTERACTIVE -eq 1 ]; then
+  interactiveSetup
+else
+  nonInteractiveSetup
+fi
+
+sed -i 's/888/'"$PORT"'/' swarmpit/docker-compose.yml
+sed -i 's/driver: local/'"driver: $VOLUME_DRIVER"'/' swarmpit/docker-compose.yml
 
 successLog "DONE."
 
@@ -105,6 +153,7 @@ fi
 printf "\nStarting swarmpit..."
 SWARMPIT_NETWORK="${STACK}_net"
 SWARMPIT_VERSION_URL="http://${STACK}_app:8080/version"
+max_attempts=20
 while true
 do
   STATUS=$(docker run --rm --network $SWARMPIT_NETWORK byrnedo/alpine-curl -s -o /dev/null -w '%{http_code}' $SWARMPIT_VERSION_URL)
@@ -113,6 +162,12 @@ do
     break
   else
     printf "."
+    attempt_counter=$(($attempt_counter+1))
+  fi
+  if [ ${attempt_counter} -eq ${max_attempts} ]; then
+      errorLog "FAILED!"
+      warningLog "Swarmpit is not responding for a long time. Aborting installation...:(\nPlease check logs and cluster status for details."
+      exit 1
   fi
   sleep 5
 done
@@ -131,5 +186,5 @@ else
   sectionLog "\nSummary"
 fi
 
-log "Swarmpit is running on port :$APP_PORT"
+log "Swarmpit is running on port :$PORT"
 titleLog "\nEnjoy :)"
