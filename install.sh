@@ -135,12 +135,18 @@ else
   nonInteractiveSetup
 fi
 
-COMPOSE_FILE="swarmpit/docker-compose.yml"
-max_attempts=20
-case $(uname -m) in arm*)
+case $(uname -m) in
+    arm*)    ARM=1 ;;
+    aarch64) ARM=1 ;;
+esac
+
+if [ $ARM -eq 1 ]; then
     COMPOSE_FILE="swarmpit/docker-compose.arm.yml"
     max_attempts=60
-esac
+else
+    COMPOSE_FILE="swarmpit/docker-compose.yml"
+    max_attempts=20
+fi
 
 sed -i 's/888/'"$PORT"'/' $COMPOSE_FILE
 sed -i 's/driver: local/'"driver: $VOLUME_DRIVER"'/' $COMPOSE_FILE
