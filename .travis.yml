@@ -1,0 +1,18 @@
+language: minimal
+addons:
+  apt:
+    packages:
+      - docker-ce
+    sources:
+      - sourceline: 'deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable test'
+        key_url: 'https://download.docker.com/linux/ubuntu/gpg'
+env:
+  global:
+    - DOCKER_CLI_EXPERIMENTAL=enabled
+  matrix:
+    - SWARMPIT_VERSION=edge
+    - SWARMPIT_VERSION=1.8
+    - SWARMPIT_VERSION=1.7
+    - SWARMPIT_VERSION=1.6
+script:
+  - bash deploy-image.sh
