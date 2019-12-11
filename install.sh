@@ -30,7 +30,8 @@ log "Branch: $BRANCH"
 
 # DEPENDENCIES
 sectionLog "\nPreparing dependencies"
-docker pull byrnedo/alpine-curl:latest
+CURL_IMAGE="lucashalbert/curl:7.67.0-r0"
+docker pull $CURL_IMAGE
 if [ $? -eq 0 ]; then
     successLog "DONE."
 else
@@ -134,14 +135,21 @@ else
   nonInteractiveSetup
 fi
 
-sed -i 's/888/'"$PORT"'/' swarmpit/docker-compose.yml
-sed -i 's/driver: local/'"driver: $VOLUME_DRIVER"'/' swarmpit/docker-compose.yml
+COMPOSE_FILE="swarmpit/docker-compose.yml"
+max_attempts=20
+case $(uname -m) in arm*)
+    COMPOSE_FILE="swarmpit/docker-compose.arm.yml"
+    max_attempts=60
+esac
+
+sed -i 's/888/'"$PORT"'/' $COMPOSE_FILE
+sed -i 's/driver: local/'"driver: $VOLUME_DRIVER"'/' $COMPOSE_FILE
 
 successLog "DONE."
 
 # DEPLOYMENT
 sectionLog "\nApplication deployment"
-docker stack deploy -c swarmpit/docker-compose.yml $STACK
+docker stack deploy -c $COMPOSE_FILE $STACK
 if [ $? -eq 0 ]; then
   successLog "DONE."
 else
@@ -153,10 +161,10 @@ fi
 printf "\nStarting swarmpit..."
 SWARMPIT_NETWORK="${STACK}_net"
 SWARMPIT_VERSION_URL="http://${STACK}_app:8080/version"
-max_attempts=20
+CURL_CMD="docker run --rm --network $SWARMPIT_NETWORK $CURL_IMAGE"
 while true
 do
-  STATUS=$(docker run --rm --network $SWARMPIT_NETWORK byrnedo/alpine-curl -s -o /dev/null -w '%{http_code}' $SWARMPIT_VERSION_URL)
+  STATUS=$($CURL_CMD -s -o /dev/null -w '%{http_code}' $SWARMPIT_VERSION_URL)
   if [ $STATUS -eq 200 ]; then
     successLog "DONE."
     break
@@ -175,7 +183,7 @@ done
 # INITIALIZATION
 printf "Initializing swarmpit..."
 SWARMPIT_INITIALIZE_URL="http://${STACK}_app:8080/initialize"
-STATUS=$(docker run --rm --network $SWARMPIT_NETWORK byrnedo/alpine-curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' $SWARMPIT_INITIALIZE_URL -d '{"username": "'"$ADMIN_USER"'", "password": "'"$ADMIN_PASS"'"}')
+STATUS=$($CURL_CMD -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' $SWARMPIT_INITIALIZE_URL -d '{"username": "'"$ADMIN_USER"'", "password": "'"$ADMIN_PASS"'"}')
 if [ $STATUS -eq 201 ]; then
   successLog "DONE."
   sectionLog "\nSummary"
