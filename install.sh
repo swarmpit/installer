@@ -135,6 +135,7 @@ else
   nonInteractiveSetup
 fi
 
+ARM=0
 case $(uname -m) in
     arm*)    ARM=1 ;;
     aarch64) ARM=1 ;;
