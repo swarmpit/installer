@@ -8,7 +8,7 @@ addons:
         key_url: 'https://download.docker.com/linux/ubuntu/gpg'
 env:
   global:
-    - DOCKER_EXPERIMENTAL=true
+    - DOCKER_CLI_EXPERIMENTAL=enabled
   matrix:
     - SWARMPIT_VERSION=edge
     - SWARMPIT_VERSION=1.8
