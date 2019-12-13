@@ -23,6 +23,22 @@ if [ "$VERSION" = 'edge' ]; then
 fi
 
 # INFO
+logo='
+                _____________
+               / ___________ \
+              / /           \ \
+             / /   _______   \ \
+            / /   /\      \   \ \
+           / /   /  \      \   \ \
+          / /   /    \______\   \ \
+          \ \   \    /      /   / /
+           \ \   \  /      /   / /
+            \ \   \/______/   / /
+             \ \             / /
+              \ \___________/ /
+               \_____________/
+'
+echo "$logo"s
 figlet swarmpit
 titleLog "Welcome to Swarmpit"
 log "Version: $VERSION"
