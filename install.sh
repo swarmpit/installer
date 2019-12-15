@@ -25,6 +25,7 @@ fi
 # INFO
 logo="./logo.txt"
 cat "$logo"
+echo
 titleLog "Welcome to Swarmpit"
 log "Version: $VERSION"
 log "Branch: $BRANCH"
