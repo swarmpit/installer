@@ -27,8 +27,8 @@ docker run -it --rm \
   --name swarmpit-installer \
   --volume /var/run/docker.sock:/var/run/docker.sock \
   -e INTERACTIVE=0 \
-  -e ADMIN_USERNAME=randy \
-  -e ADMIN_PASSWORD=test1234 \
+  -e STACK_NAME=pwd \
+  -e APP_PORT=777 \
   swarmpit/install:edge
 ```
 
@@ -37,11 +37,9 @@ docker run -it --rm \
 ##### Mandatory 
 
 - INTERACTIVE - must be set to **0** (disabled)
-- ADMIN_PASSWORD - must be at least 8 characters long
 
 ##### Optional 
 
 - STACK_NAME - default to **swarmpit**
-- ADMIN_USERNAME - default to **admin**
 - APP_PORT - default to **888**
 - DB_VOLUME_DRIVER - default to **local**

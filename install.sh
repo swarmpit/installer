@@ -1,5 +1,5 @@
 #!/bin/bash
-  
+
 GC='\033[0;32m' #green color
 RC='\033[0;31m' #red color
 OC='\033[0;33m' #orange color
@@ -28,17 +28,6 @@ titleLog "Welcome to Swarmpit"
 log "Version: $VERSION"
 log "Branch: $BRANCH"
 
-# DEPENDENCIES
-sectionLog "\nPreparing dependencies"
-CURL_IMAGE="lucashalbert/curl:7.67.0-r0"
-docker pull $CURL_IMAGE
-if [ $? -eq 0 ]; then
-    successLog "DONE."
-else
-    errorLog "PREPARATION FAILED!"
-    exit 1
-fi
-
 # INSTALLATION
 sectionLog "\nPreparing installation"
 git clone https://github.com/swarmpit/swarmpit -b $BRANCH
@@ -54,7 +43,6 @@ sectionLog "\nApplication setup"
 
 INTERACTIVE=${INTERACTIVE:-1}
 DEFAULT_STACK_NAME=${STACK_NAME:-swarmpit}
-DEFAULT_ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
 DEFAULT_APP_PORT=${APP_PORT:-888}
 DEFAULT_DB_VOLUME_DRIVER=${DB_VOLUME_DRIVER:-local}
 
@@ -82,18 +70,6 @@ interactiveSetup() {
   inputLog "Enter database volume driver [$DEFAULT_DB_VOLUME_DRIVER]: "
   read db_driver
   VOLUME_DRIVER=${db_driver:=$DEFAULT_DB_VOLUME_DRIVER}
-
-  ## Enter admin user
-  inputLog "Enter admin username [$DEFAULT_ADMIN_USERNAME]: "
-  read admin_username
-  ADMIN_USER=${admin_username:=$DEFAULT_ADMIN_USERNAME}
-
-  ## Enter admin passwd
-  while [[ ${#admin_password} -lt 8 ]]; do
-    inputLog "Enter admin password (min 8 characters long): "
-    read admin_password
-  done
-  ADMIN_PASS=${admin_password}
 }
 
 nonInteractiveSetup() {
@@ -114,19 +90,6 @@ nonInteractiveSetup() {
   ## Database volume driver type
   inputLog "\nDatabase volume driver: $DEFAULT_DB_VOLUME_DRIVER"
   VOLUME_DRIVER=$DEFAULT_DB_VOLUME_DRIVER
-
-  ## Admin user
-  inputLog "\nAdmin username: $DEFAULT_ADMIN_USERNAME"
-  ADMIN_USER=$DEFAULT_ADMIN_USERNAME
-  
-  ## Admin password
-  inputLog "\nAdmin password: $ADMIN_PASSWORD\n"
-  ADMIN_PASS=$ADMIN_PASSWORD
-  if [ ${#ADMIN_PASS} -lt 8 ]; then
-    warningLog "Admin password is less than 8 character long"
-    errorLog "SETUP FAILED!"
-    exit 1
-  fi
 }
 
 if [ $INTERACTIVE -eq 1 ]; then
@@ -143,14 +106,18 @@ esac
 
 if [ $ARM -eq 1 ]; then
     COMPOSE_FILE="swarmpit/docker-compose.arm.yml"
-    max_attempts=60
+    max_attempts=56 # Wait up to ~ 4 minutes -> ((60[interval] + 10[timeout]) * 4[minutes]) / 5[sleep]
 else
     COMPOSE_FILE="swarmpit/docker-compose.yml"
-    max_attempts=20
+    max_attempts=28 # Wait up to ~ 2 minutes -> ((60[interval] + 10[timeout]) * 2[minutes]) / 5[sleep]
 fi
 
-sed -i 's/888/'"$PORT"'/' $COMPOSE_FILE
-sed -i 's/driver: local/'"driver: $VOLUME_DRIVER"'/' $COMPOSE_FILE
+sed -i "s|888:8080|$PORT:8080|" $COMPOSE_FILE
+sed -i "s|driver:\ local|driver:\ $VOLUME_DRIVER|g" $COMPOSE_FILE
+
+# MacOS
+# sed -i "" "s|888:8080|$PORT:8080|" $COMPOSE_FILE
+# sed -i "" "s|driver:\ local|driver:\ $VOLUME_DRIVER|g" $COMPOSE_FILE
 
 successLog "DONE."
 
@@ -166,13 +133,11 @@ fi
 
 # START
 printf "\nStarting swarmpit..."
-SWARMPIT_NETWORK="${STACK}_net"
-SWARMPIT_VERSION_URL="http://${STACK}_app:8080/version"
-CURL_CMD="docker run --rm --network $SWARMPIT_NETWORK $CURL_IMAGE"
 while true
 do
-  STATUS=$($CURL_CMD -s -o /dev/null -w '%{http_code}' $SWARMPIT_VERSION_URL)
-  if [ $STATUS -eq 200 ]; then
+  STATUS=$(curl --unix-socket /var/run/docker.sock -sgG -X GET http:/v1.24/tasks?filters="{\"service\":[\"${STACK}_app\"]}" | jq -r 'sort_by(.CreatedAt) | .[-1].Status.State')
+  # Check whether status of the most recent task is running (Healthcheck passed)
+  if [ "$STATUS" = "running" ]; then
     successLog "DONE."
     break
   else
@@ -186,20 +151,6 @@ do
   fi
   sleep 5
 done
-
-# INITIALIZATION
-printf "Initializing swarmpit..."
-SWARMPIT_INITIALIZE_URL="http://${STACK}_app:8080/initialize"
-STATUS=$($CURL_CMD -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' $SWARMPIT_INITIALIZE_URL -d '{"username": "'"$ADMIN_USER"'", "password": "'"$ADMIN_PASS"'"}')
-if [ $STATUS -eq 201 ]; then
-  successLog "DONE."
-  sectionLog "\nSummary"
-  log "Username: $ADMIN_USER"
-  log "Password: $ADMIN_PASS"
-else
-  warningLog "SKIPPED.\nInitialization was already done in previous installation.\nPlease use your old admin credentials to login or drop swarmpit database volume for clean installation."
-  sectionLog "\nSummary"
-fi
 
 log "Swarmpit is running on port :$PORT"
 titleLog "\nEnjoy :)"
