@@ -27,8 +27,8 @@ docker run -it --rm \
   --name swarmpit-installer \
   --volume /var/run/docker.sock:/var/run/docker.sock \
   -e INTERACTIVE=0 \
-  -e STACK_NAME=pwd \
-  -e APP_PORT=777 \
+  -e STACK_NAME=swarmpit \
+  -e APP_PORT=888 \
   swarmpit/install:edge
 ```
 
