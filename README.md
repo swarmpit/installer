@@ -2,6 +2,8 @@
 
 Swarmpit platform installer
 
+For **1.9** release and older please refer to following [guide](https://github.com/swarmpit/installer/tree/8b947373547e977dab86760773f55bd1e3d1d4f5)
+
 ## Run 
 
 ### Interactive mode
