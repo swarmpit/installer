@@ -23,7 +23,9 @@ if [ "$VERSION" = 'edge' ]; then
 fi
 
 # INFO
-figlet swarmpit
+logo="./logo.txt"
+cat "$logo"
+echo
 titleLog "Welcome to Swarmpit"
 log "Version: $VERSION"
 log "Branch: $BRANCH"
