@@ -2,6 +2,8 @@
 
 Swarmpit platform installer
 
+For **1.9** release and older please refer to following [guide](https://github.com/swarmpit/installer/tree/8b947373547e977dab86760773f55bd1e3d1d4f5)
+
 ## Run 
 
 ### Interactive mode
@@ -27,8 +29,8 @@ docker run -it --rm \
   --name swarmpit-installer \
   --volume /var/run/docker.sock:/var/run/docker.sock \
   -e INTERACTIVE=0 \
-  -e ADMIN_USERNAME=randy \
-  -e ADMIN_PASSWORD=test1234 \
+  -e STACK_NAME=swarmpit \
+  -e APP_PORT=888 \
   swarmpit/install:edge
 ```
 
@@ -37,11 +39,9 @@ docker run -it --rm \
 ##### Mandatory 
 
 - INTERACTIVE - must be set to **0** (disabled)
-- ADMIN_PASSWORD - must be at least 8 characters long
 
 ##### Optional 
 
 - STACK_NAME - default to **swarmpit**
-- ADMIN_USERNAME - default to **admin**
 - APP_PORT - default to **888**
 - DB_VOLUME_DRIVER - default to **local**

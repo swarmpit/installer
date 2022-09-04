@@ -11,8 +11,5 @@ env:
     - DOCKER_CLI_EXPERIMENTAL=enabled
   matrix:
     - SWARMPIT_VERSION=edge
-    - SWARMPIT_VERSION=1.8
-    - SWARMPIT_VERSION=1.7
-    - SWARMPIT_VERSION=1.6
 script:
   - bash deploy-image.sh
