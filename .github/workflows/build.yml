@@ -27,7 +27,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           build-args:
-            tag: edge
+            - tag=edge
           context: .
           push: ${{ env.SECRET != 0 }}
           platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
