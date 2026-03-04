@@ -1,4 +1,4 @@
-FROM docker:25.0.5-dind
+FROM docker:25.0.5
 MAINTAINER Pavol Noha <pavol.noha@gmail.com>
 
 RUN apk add --update git figlet curl jq && \
