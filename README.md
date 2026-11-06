@@ -45,3 +45,15 @@ docker run -it --rm \
 - STACK_NAME - default to **swarmpit**
 - APP_PORT - default to **888**
 - DB_VOLUME_DRIVER - default to **local**
+
+## Publishing releases
+
+Pushes to `master` publish `swarmpit/install:edge`. To publish a versioned installer,
+run **Actions → Build & Deploy → Run workflow** from `master` with `version` set to
+an existing Swarmpit release tag, for example `1.10`. The workflow validates the
+release tag and uses it for both the Docker image tag and the installer's embedded
+`VERSION`, so `swarmpit/install:1.10` checks out the `1.10` release instead of `master`.
+
+Publishing requires the existing `PKG_USER`, `DOCKERHUB_USER` and `DOCKERHUB_PASS`
+repository secrets. After the upstream workflow successfully pushes the image,
+the `swarmpit/install:1.10` command on the landing page can pull it.
